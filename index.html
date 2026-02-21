@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      gametime = {
+        channel: "world",
+        socket: new WebSocket("ws://localhost:8000"),
+        players: {},
+        player: {},
+        uuid: null,
+        connected: false,
+        cache: {
+          previousEntry: null
+        },
+        update: function() {
+          if (JSON.stringify(gametime.player.data) == gametime.cache.previousEntry) return;
+          gametime.cache.previousEntry = JSON.stringify(gametime.player.data);
+          gametime.socket.send(JSON.stringify({
+            event: "updatePlayer",
+            domain: location.hostname,
+            channel: gametime.channel,
+            playerUUID: gametime.uuid,
+            data: {
+              entry: gametime.player.data
+            }
+          }));
+        }
+      };
+
+      gametime.socket.onopen = function() {
+        gametime.socket.onmessage = function(message) {
+          const data = JSON.parse(message.data);
+          const event = data.event;
+          if (event == "joinCallback") {
+            gametime.uuid = data.data.playerUUID;
+            sessionStorage.setItem("multiplayerUUID", gametime.uuid);
+            gametime.connected = true;
+            gametime.player = data.data.entry;
+            setInterval(gametime.update, 100);
+          }
+          if (event == "updateAllPlayers") {
+            if (data.channel === gametime.channel) {
+              gametime.players = data.data.players;
+            }
+          }
+        };
+
+        gametime.socket.send(JSON.stringify({
+          event: "join",
+          channel: gametime.channel,
+          domain: location.hostname,
+          playerUUID: sessionStorage["multiplayerUUID"]
+        }));
+      }
+    </script>
+  </body>
+</html>
