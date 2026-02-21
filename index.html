@@ -9,11 +9,12 @@
     <script>
       gametime = {
         channel: "world",
-        socket: new WebSocket("ws://localhost:8000"),
+        socket: new WebSocket("ws://gametime-js-4.loca.lt"),
         players: {},
         player: {},
         uuid: null,
         connected: false,
+        playerPresets: {},
         cache: {
           previousEntry: null
         },
@@ -25,38 +26,80 @@
             domain: location.hostname,
             channel: gametime.channel,
             playerUUID: gametime.uuid,
-            data: {
-              entry: gametime.player.data
-            }
+            entry: gametime.player.data
           }));
+        },
+        set: function(key, value) {
+          if (key == "player") {
+            if (gametime.connected) {
+              gametime.logger.error("Player presets can only be set before Gametime.js connects.");
+            } else {
+              if (typeof value == "object") {
+                gametime.playerPresets = value;
+              } else {
+                gametime.logger.error("Player presets must be an object.");
+              }
+            }
+          }
+        },
+        logger: {
+          error: function(message) {
+            console.log("%cError: Gametime.js: " + message, "color: #dd1111;");
+          },
+          success: function(message) {
+            console.log("%cGametime.js: " + message, "color: #229922;");
+          },
+          info: function(message) {
+            console.log("Gametime.js: " + message);
+          }
         }
       };
 
+      gametime.logger.info("connecting...");
+      const startTime = Date.now();
       gametime.socket.onopen = function() {
         gametime.socket.onmessage = function(message) {
           const data = JSON.parse(message.data);
           const event = data.event;
           if (event == "joinCallback") {
-            gametime.uuid = data.data.playerUUID;
+            gametime.uuid = data.playerUUID;
             sessionStorage.setItem("multiplayerUUID", gametime.uuid);
+            gametime.player = data.entry;
             gametime.connected = true;
-            gametime.player = data.data.entry;
-            setInterval(gametime.update, 100);
+            const time = Date.now() - startTime;
+            gametime.logger.success("Successfully connected in " + time + "ms.");
           }
           if (event == "updateAllPlayers") {
             if (data.channel === gametime.channel) {
-              gametime.players = data.data.players;
+              gametime.players = data.players;
             }
           }
         };
-
         gametime.socket.send(JSON.stringify({
           event: "join",
           channel: gametime.channel,
           domain: location.hostname,
-          playerUUID: sessionStorage["multiplayerUUID"]
+          playerUUID: sessionStorage["multiplayerUUID"],
+          presets: gametime.playerPresets
         }));
+      };
+
+      gametime.socket.onerror = function() {
+        gametime.logger.error("Public server is currently down. Please wait for it to come back up.");
       }
+
+      gametime.set("player", {
+        primaryWeapon: "...",
+        secondaryWeapon: "...",
+        position: [0, 0],
+        rotation: [0, 0]
+      });
+
+      function animate() {
+        gametime.update();
+        requestAnimationFrame(animate);
+      }
+      animate();
     </script>
   </body>
 </html>

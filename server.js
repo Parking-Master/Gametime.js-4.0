@@ -1,6 +1,19 @@
 const app = require("express")();
 const WebSocket = require("ws");
 const client = new WebSocket.Server({ port: 8000 });
+const localtunnel = require("localtunnel");
+
+(async function() {
+  const tunnel = await localtunnel({ port: 8000, subdomain: "gametime-js-4" });
+  console.log(tunnel.url);
+  tunnel.on("close", function() {
+    console.log("Tunnel closed");
+  });
+  process.on("SIGINT", () => {
+    tunnel.close();
+    process.exit();
+  });
+})();
 
 function uuidv4() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
@@ -40,9 +53,7 @@ function updateAllPlayers(channel, players) {
   sendAllSockets(channel, JSON.stringify({
     event: "updateAllPlayers",
     channel: channel,
-    data: {
-      players: playersWithoutSocket(players)
-    }
+    players: playersWithoutSocket(players)
   }));
 }
 
@@ -69,18 +80,9 @@ client.on("connection", (socket) => {
 
       if (data.playerUUID) {
         uuid = data.playerUUID;
+        console.log("Player " + uuid + " reconnected");
       } else {
         uuid = uuidv4();
-      }
-
-      let presets = {
-        primaryWeapon: "AK-74",
-        secondaryWeapon: "FN-502",
-        position: [0, 0]
-      };
-
-      if (data.presets) {
-        presets = data.presets;
       }
 
       const entry = {
@@ -88,18 +90,16 @@ client.on("connection", (socket) => {
         username: "Guest",
         connected: true,
         position: players[uuid] ? players[uuid].position : findFreePosition(players),
-        ready: false,
-        data: presets
+        data: data.presets || {},
+        uuid: uuid
       };
 
       players[uuid] = entry;
 
       socket.send(JSON.stringify({
         event: "joinCallback",
-        data: {
-          playerUUID: uuid,
-          entry: playerWithoutSocket(entry)
-        }
+        playerUUID: uuid,
+        entry: playerWithoutSocket(entry)
       }));
 
       updateAllPlayers(channel, players);
@@ -124,7 +124,7 @@ client.on("connection", (socket) => {
       if (typeof channels[channel] == "undefined") return;
 
       const players = channels[channel].players;
-      const newEntry = data.data.entry;
+      const newEntry = data.entry;
       const uuid = data.playerUUID;
 
       players[uuid].data = newEntry;
