@@ -6,14 +6,15 @@
 */
 window.gametime = {
   channel: "world",
-  socket: new WebSocket("ws://gametime-js-4.serveousercontent.com"),
+  serverURL: "ws://gametime-js-4.serveousercontent.com",
+  socket: null,
   players: {},
   player: {},
   username: "Guest",
-  uuid: null,
   connected: false,
   playerPresets: {},
   cache: {
+    events: {},
     previousEntry: null,
     previousPlayersAmount: 1
   },
@@ -22,9 +23,8 @@ window.gametime = {
     gametime.cache.previousEntry = JSON.stringify(gametime.player.data);
     gametime.socket.send(JSON.stringify({
       event: "updatePlayer",
-      domain: location.hostname,
       channel: gametime.channel,
-      playerUUID: gametime.uuid,
+      playerUUID: gametime.player.uuid,
       entry: gametime.player.data
     }));
   },
@@ -65,49 +65,80 @@ window.gametime = {
     info: function(message) {
       console.log("Gametime.js: " + message);
     }
-  }
-};
-
-gametime.logger.info("Connecting...");
-const startTime = Date.now();
-gametime.socket.onopen = function() {
-  gametime.socket.onmessage = function(message) {
-    const data = JSON.parse(message.data);
-    const event = data.event;
-    if (event == "joinCallback") {
-      gametime.uuid = data.playerUUID;
-      sessionStorage.setItem("multiplayerUUID", gametime.uuid);
-      gametime.player = data.entry;
-      gametime.connected = true;
-      const time = Date.now() - startTime;
-      gametime.logger.success("Successfully connected in " + time + "ms");
-    }
-    if (event == "updateAllPlayers") {
-      if (data.channel === gametime.channel) {
-        if (Object.keys(data.players).length != gametime.cache.previousPlayersAmount) {
-          gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
-          gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
+  },
+  on: function(name, handler) {
+    if (typeof name !== "string") return gametime.logger.error("Event name must be a string when calling gametime.on()");
+    if (typeof handler !== "function") return gametime.logger.error("Event handler must be a function when calling gametime.on()");
+    gametime.cache.events[name] = handler;
+  },
+  run: function(name, args) {
+    if (typeof name !== "string") return gametime.logger.error("Event name must be a string when calling gametime.run()");
+    if (typeof args !== "object" || !(args instanceof Array)) return gametime.logger.error("Event name must be a string when calling gametime.run()");
+    gametime.socket.send(JSON.stringify({
+      event: "run",
+      channel: gametime.channel,
+      name: name,
+      args: args
+    }));
+  },
+  onconnect: null,
+  onupdate: null,
+  connect: function() {
+    gametime.logger.info("Connecting...");
+    const startTime = Date.now();
+    gametime.socket = new WebSocket(gametime.serverURL);
+    gametime.socket.onopen = function() {
+      gametime.socket.onmessage = function(message) {
+        const data = JSON.parse(message.data);
+        const event = data.event;
+        if (event == "joinCallback") {
+          sessionStorage.setItem("multiplayerUUID", data.playerUUID);
+          gametime.player = data.entry;
+          gametime.connected = true;
+          const time = Date.now() - startTime;
+          gametime.logger.success("Successfully connected in " + time + "ms");
+          if (typeof gametime.onconnect === "function") gametime.onconnect();
         }
-        gametime.players = data.players;
+        if (event == "updateAllPlayers") {
+          if (data.channel === gametime.channel) {
+            if (Object.keys(data.players).length > gametime.cache.previousPlayersAmount) {
+              gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
+              gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
+            }
+            gametime.players = data.players;
+            const player = gametime.players[data.uuid];
+            if (typeof gametime.onupdate === "function") gametime.onupdate(player);
+          }
+        }
+        if (event == "runCallback") {
+          if (data.channel === gametime.channel) {
+            gametime.cache.events[data.name].apply(this, data.args);
+          }
+        }
+      };
+      gametime.socket.send(JSON.stringify({
+        event: "join",
+        channel: gametime.channel,
+        playerUUID: sessionStorage["multiplayerUUID"],
+        presets: gametime.playerPresets,
+        username: gametime.username
+      }));
+    };
+    
+    gametime.socket.onerror = function() {
+      gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
+    };
+    
+    gametime.socket.onclose = function() {
+      if (gametime.connected) {
+        gametime.logger.warn("Disconnected from server");
+        gametime.connected = false;
       }
+    };
+  },
+  disconnect: function() {
+    if (gametime.connected) {
+      gametime.socket.close();
     }
-  };
-  gametime.socket.send(JSON.stringify({
-    event: "join",
-    channel: gametime.channel,
-    domain: location.hostname,
-    playerUUID: sessionStorage["multiplayerUUID"],
-    presets: gametime.playerPresets,
-    username: gametime.username
-  }));
-};
-
-gametime.socket.onerror = function() {
-  gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
-};
-
-gametime.socket.onclose = function() {
-  if (gametime.connected) {
-    gametime.logger.warn("Disconnected from server");
   }
 };

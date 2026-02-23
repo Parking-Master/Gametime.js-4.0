@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gametime.js-4.0 chat room</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Parking-Master/Gametime.js-X@latest/example_chat.css">
+    <script src="https://cdn.jsdelivr.net/gh/Parking-Master/Gametime.js@latest/js/username-generator.js"></script>
+  </head>
+  <body>
+    <script src="gametime.js"></script>
+    <div id="loading">Loading chat...</div>
+    <ul id="messages"></ul>
+    <form id="form">
+      <input id="input" placeholder="Type your message here...">
+      <button class="send">Send</button>
+      <button class="disconnect" onclick="gametime.disconnect()">Disconnect</button>
+    </form>
+    <script>
+      gametime.onconnect = function() {
+        document.querySelector("#loading").remove();
+      };
+
+      gametime.set("channel", "my-chat-room1234");
+      gametime.set("username", generateName());
+      gametime.connect();
+
+      const messages = document.querySelector("#messages");
+      const form = document.querySelector("#form");
+      const input = document.querySelector("#input");
+
+      gametime.on("postChatMessage", function(message) {
+        let item = document.createElement("li");
+        item.textContent = message;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+        let chatHistory = localStorage["history"];
+        let noBug = chatHistory === "" ? "" : ",";
+        localStorage.setItem("history", (chatHistory + noBug + encodeURIComponent(message)).split(",").toString());
+      });
+
+      if (!localStorage["history"]) {
+        localStorage.setItem("history", "");
+      } else {
+        const history = localStorage["history"].split(",");
+        for (var i = 0; i < history.length; i++) {
+          var item = document.createElement("li");
+          item.textContent = decodeURIComponent(history[i]);
+          messages.appendChild(item);
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      }
+
+      form.onsubmit = function(event) {
+        event.preventDefault();
+        if (input.value) {
+          const message = `${gametime.player.username}: ${input.value}`;
+          gametime.run("postChatMessage", [message]);
+          input.value = "";
+        }
+      };
+    </script>
+  </body>
+</html>
