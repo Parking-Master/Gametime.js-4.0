@@ -101,11 +101,11 @@ window.gametime = {
         }
         if (event == "updateAllPlayers") {
           if (data.channel === gametime.channel) {
+            gametime.players = data.players;
             if (Object.keys(data.players).length > gametime.cache.previousPlayersAmount) {
               gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
               gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
             }
-            gametime.players = data.players;
             const player = gametime.players[data.uuid];
             if (typeof gametime.onupdate === "function") gametime.onupdate(player);
           }
