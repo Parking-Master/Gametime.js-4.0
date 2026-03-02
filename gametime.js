@@ -6,7 +6,7 @@
 */
 window.gametime = {
   channel: "world",
-  serverURL: "ws://gametime-js-4.serveousercontent.com",
+  serverURL: "wss://gametime-js-4.serveousercontent.com",
   socket: null,
   players: {},
   player: {},
