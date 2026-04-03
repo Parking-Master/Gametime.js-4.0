@@ -82,7 +82,7 @@ for (player in gametime.players) {
 }
 ```
 
-That's it! You now have a working multiplayer game. To see all features of Gametime.js-4.0, go [here](#).
+That's it! You now have a working multiplayer game. To see all features of Gametime.js-4.0, scroll to the [Documentation](#documentation).
 
 ### For chat rooms
 Gametime.js-4.0 uses the same event-calling logic all other versions of Gametime.js use. This allows you to easily create chat rooms instead of just multiplayer games.
