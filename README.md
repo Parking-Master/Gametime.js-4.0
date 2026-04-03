@@ -45,7 +45,7 @@ The default server for Gametime.js-4.0 is `gametime-js-4.serveousercontent.com`.
 gametime.serverURL = "ws://YOUR_SERVER_HERE";
 ```
 
-For example, if you want to run a LAN multiplayer game, you could download and run the server script on `192.168.1.12:8080`, then on the page, do:
+For example, if you want to run a LAN multiplayer game, [download the server file](https://github.com/Parking-Master/Gametime.js-4.0/blob/main/server.js) and run it on any device (like `192.168.1.12:8080`), then on the page, do:
 ```
 gametime.set("channel", "example-fps-game123");
 gametime.serverURL = "ws://192.168.1.12:8080";
