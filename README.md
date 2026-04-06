@@ -137,7 +137,7 @@ To see how everything works, we've put together a full [Chat Room Demo](https://
 - `gametime.player`: Object containing your player's data. Shortcut to `gametime.players[gametime.player.uuid]`.
 - `gametime.username`: String representing your player's username. Shortcut to `gametime.player.username`.
 - `gametime.connected`: Boolean which tells if you are connected to the socket server. Shortcut to `gametime.player.connected`.
-- `gametime.channel`: String which tells what channel you're currently connected to. Defined with `gametime.set("channel", channel
+- `gametime.channel`: String which tells what channel you're currently connected to. Defined with `gametime.set("channel", channel)`.
 
 ## Support
 For feature requests and bug reports, open an [Issue](https://github.com/Parking-Master/Gametime.js-4.0/issues).
