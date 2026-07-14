@@ -40,7 +40,7 @@ gametime.connect();
 _Tip: Channels allow you to separate your game from other Gametime.js-4.0 users and players of your game._
 
 ###### Using your own server
-The default server for Gametime.js-4.0 is `gametime-js-4.serveousercontent.com`. It is maintained by us and almost always up, so you don't need to worry about using your own server. If you still want to use your own server, you can do this before calling `gametime.connect()`:
+The default server for Gametime.js-4.0 is `parkingmaster-cloud.serveousercontent.com`. It is maintained by us and almost always up, so you don't need to worry about using your own server. If you still want to use your own server, you can do this before calling `gametime.connect()`:
 ```javascript
 gametime.serverURL = "ws://YOUR_SERVER_HERE";
 ```
@@ -131,7 +131,7 @@ To see how everything works, we've put together a full [Chat Room Demo](https://
 - `gametime.disconnect()`: Disconnects from the currently connected socket server.
 - `gametime.onconnect()`: A custom function to run when Gametime.js-4.0 connects. Default is `null`.
 - `gametime.onupdate(player)`: A custom function to run when any player's data changes. Returns the player whose data changed. Default is `null`.
-- `gametime.serverURL`: The URL to the socket server that Gametime.js-4.0 will connect to. Default is `"wss://gametime-js-4.serveousercontent.com"`.
+- `gametime.serverURL`: The URL to the socket server that Gametime.js-4.0 will connect to. Default is `"wss://parkingmaster-cloud.serveousercontent.com"`.
 - `gametime.players`: An object containing connected players, with each key being the player's UUID.
   - Entry: `{ username: String, connected: Boolean, position: Number, data: Object{}, uuid: String }`
 - `gametime.player`: Object containing your player's data. Shortcut to `gametime.players[gametime.player.uuid]`.
