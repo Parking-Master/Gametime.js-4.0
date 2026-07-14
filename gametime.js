@@ -6,7 +6,7 @@
 */
 window.gametime = {
   channel: "world",
-  serverURL: "wss://gametime-js-4.serveousercontent.com",
+  serverURL: "wss://parkingmaster-cloud.serveousercontent.com",
   socket: null,
   players: {},
   player: {},
