@@ -51,6 +51,13 @@ window.gametime = {
         }
       }
     }
+    if (key == "channel") {
+      if (typeof value === "string" && value) {
+        gametime.channel = value;
+      } else {
+        gametime.logger.error("Channel name must be a string containing any value.");
+      }
+    }
   },
   logger: {
     warn: function(message) {
