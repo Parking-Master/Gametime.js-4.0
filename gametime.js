@@ -7,6 +7,7 @@
 window.gametime = {
   channel: "world",
   serverURL: "wss://parkingmaster-cloud.serveousercontent.com",
+  useFasterServer: false,
   socket: null,
   players: {},
   player: {},
@@ -18,6 +19,7 @@ window.gametime = {
     previousEntry: null,
     previousPlayersAmount: 1,
     defaultServerURL: "wss://parkingmaster-cloud.serveousercontent.com",
+    fastServerConnectionRetries: 0
   },
   update: function() {
     if (JSON.stringify(gametime.player.data) == gametime.cache.previousEntry) return;
@@ -135,6 +137,10 @@ window.gametime = {
       };
       
       gametime.socket.onerror = function() {
+        if (gametime.useFasterServer && gametime.cache.fastServerConnectionRetries <= 0) {
+          gametime.cache.fastServerConnectionRetries++;
+          return next(gametime.serverURL);
+        }
         gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
       };
       
@@ -145,8 +151,8 @@ window.gametime = {
         }
       };
     }
-    if (gametime.serverURL == gametime.cache.defaultServerURL) {
-      fetch("https://parkingmaster-cloud.serveousercontent.com/get-gametime-server").then(response => response.text()).then(serverURL => next(serverURL));
+    if (gametime.useFasterServer && gametime.serverURL == gametime.cache.defaultServerURL) {
+      fetch("https://parkingmaster-cloud.serveousercontent.com/gametime-fast-server-url").then(response => response.text()).then(serverURL => next(serverURL));
     } else {
       next(gametime.serverURL);
     }
