@@ -16,7 +16,8 @@ window.gametime = {
   cache: {
     events: {},
     previousEntry: null,
-    previousPlayersAmount: 1
+    previousPlayersAmount: 1,
+    defaultServerURL: "wss://parkingmaster-cloud.serveousercontent.com",
   },
   update: function() {
     if (JSON.stringify(gametime.player.data) == gametime.cache.previousEntry) return;
@@ -93,55 +94,62 @@ window.gametime = {
   connect: function() {
     gametime.logger.info("Connecting...");
     const startTime = Date.now();
-    gametime.socket = new WebSocket(gametime.serverURL);
-    gametime.socket.onopen = function() {
-      gametime.socket.onmessage = function(message) {
-        const data = JSON.parse(message.data);
-        const event = data.event;
-        if (event == "joinCallback") {
-          sessionStorage.setItem("multiplayerUUID", data.playerUUID);
-          gametime.player = data.entry;
-          gametime.connected = true;
-          const time = Date.now() - startTime;
-          gametime.logger.success("Successfully connected in " + time + "ms");
-          if (typeof gametime.onconnect === "function") gametime.onconnect();
-        }
-        if (event == "updateAllPlayers") {
-          if (data.channel === gametime.channel) {
-            gametime.players = data.players;
-            if (Object.keys(data.players).length > gametime.cache.previousPlayersAmount) {
-              gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
-              gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
+    function next(serverURL) {
+      gametime.socket = new WebSocket(serverURL);
+      gametime.socket.onopen = function() {
+        gametime.socket.onmessage = function(message) {
+          const data = JSON.parse(message.data);
+          const event = data.event;
+          if (event == "joinCallback") {
+            sessionStorage.setItem("multiplayerUUID", data.playerUUID);
+            gametime.player = data.entry;
+            gametime.connected = true;
+            const time = Date.now() - startTime;
+            gametime.logger.success("Successfully connected in " + time + "ms");
+            if (typeof gametime.onconnect === "function") gametime.onconnect();
+          }
+          if (event == "updateAllPlayers") {
+            if (data.channel === gametime.channel) {
+              gametime.players = data.players;
+              if (Object.keys(data.players).length > gametime.cache.previousPlayersAmount) {
+                gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
+                gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
+              }
+              const player = gametime.players[data.uuid];
+              if (typeof gametime.onupdate === "function") gametime.onupdate(player);
             }
-            const player = gametime.players[data.uuid];
-            if (typeof gametime.onupdate === "function") gametime.onupdate(player);
           }
-        }
-        if (event == "runCallback") {
-          if (data.channel === gametime.channel) {
-            gametime.cache.events[data.name].apply(this, data.args);
+          if (event == "runCallback") {
+            if (data.channel === gametime.channel) {
+              gametime.cache.events[data.name].apply(this, data.args);
+            }
           }
+        };
+        gametime.socket.send(JSON.stringify({
+          event: "join",
+          channel: gametime.channel,
+          playerUUID: sessionStorage["multiplayerUUID"],
+          presets: gametime.playerPresets,
+          username: gametime.username
+        }));
+      };
+      
+      gametime.socket.onerror = function() {
+        gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
+      };
+      
+      gametime.socket.onclose = function() {
+        if (gametime.connected) {
+          gametime.logger.warn("Disconnected from server");
+          gametime.connected = false;
         }
       };
-      gametime.socket.send(JSON.stringify({
-        event: "join",
-        channel: gametime.channel,
-        playerUUID: sessionStorage["multiplayerUUID"],
-        presets: gametime.playerPresets,
-        username: gametime.username
-      }));
-    };
-    
-    gametime.socket.onerror = function() {
-      gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
-    };
-    
-    gametime.socket.onclose = function() {
-      if (gametime.connected) {
-        gametime.logger.warn("Disconnected from server");
-        gametime.connected = false;
-      }
-    };
+    }
+    if (gametime.serverURL == gametime.cache.defaultServerURL) {
+      fetch("https://parkingmaster-cloud.serveousercontent.com/get-gametime-server").then(response => response.text()).then(serverURL => next(serverURL));
+    } else {
+      next(gametime.serverURL);
+    }
   },
   disconnect: function() {
     if (gametime.connected) {
