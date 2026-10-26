@@ -132,6 +132,7 @@ To see how everything works, we've put together a full [Chat Room Demo](https://
 - `gametime.onconnect()`: A custom function to run when Gametime.js-4.0 connects. Default is `null`.
 - `gametime.onupdate(player)`: A custom function to run when any player's data changes. Returns the player whose data changed. Default is `null`.
 - `gametime.serverURL`: The URL to the socket server that Gametime.js-4.0 will connect to. Default is `"wss://parkingmaster-cloud.serveousercontent.com"`.
+- `gametime.useFasterServer`: The default Gametime.js 4.0 server uses a basic tunnel provider. This option controls whether to use a faster tunnel provided by us whenever available. If a faster server isn't available, it will just fall back and use the normal public server. This option has no effect when providing your own `serverURL`. Default is `false`.
 - `gametime.players`: An object containing connected players, with each key being the player's UUID.
   - Entry: `{ username: String, connected: Boolean, position: Number, data: Object{}, uuid: String }`
 - `gametime.player`: Object containing your player's data. Shortcut to `gametime.players[gametime.player.uuid]`.
