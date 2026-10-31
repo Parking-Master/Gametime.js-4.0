@@ -22,8 +22,9 @@ window.gametime = {
     fastServerConnectionRetries: 0
   },
   update: function() {
-    if (JSON.stringify(gametime.player.data) == gametime.cache.previousEntry) return;
-    gametime.cache.previousEntry = JSON.stringify(gametime.player.data);
+    let entryString = JSON.stringify(gametime.player.data);
+    if (entryString == gametime.cache.previousEntry) return;
+    gametime.cache.previousEntry = entryString;
     gametime.socket.send(JSON.stringify({
       event: "updatePlayer",
       channel: gametime.channel,
@@ -113,9 +114,11 @@ window.gametime = {
           if (event == "updateAllPlayers") {
             if (data.channel === gametime.channel) {
               gametime.players = data.players;
-              if (Object.keys(data.players).length > gametime.cache.previousPlayersAmount) {
-                gametime.cache.previousPlayersAmount = Object.keys(data.players).length;
-                gametime.logger.info("Player joined. There are now " + Object.keys(data.players).length + " connected players");
+              let playersAmount = 0;
+              for (key in data.players) playersAmount++;
+              if (playersAmount > gametime.cache.previousPlayersAmount) {
+                gametime.cache.previousPlayersAmount = playersAmount;
+                gametime.logger.info("Player joined. There are now " + playersAmount + " connected players");
               }
               const player = gametime.players[data.uuid];
               if (typeof gametime.onupdate === "function") gametime.onupdate(player);
@@ -141,7 +144,11 @@ window.gametime = {
           gametime.cache.fastServerConnectionRetries++;
           return next(gametime.serverURL);
         }
-        gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
+        if (gametime.serverURL == gametime.cache.defaultServerURL) {
+          gametime.logger.error("Public server is currently down. Please wait for it to come back up or report an issue at https://github.com/Parking-Master/Gametime.js-4.0/issues");
+        } else {
+          gametime.logger.error("Couldn't connect to " + gametime.serverURL + ". Make sure the server you set is correct, or use the public server instead.");
+        }
       };
       
       gametime.socket.onclose = function() {
